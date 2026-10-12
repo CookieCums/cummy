@@ -1,0 +1,2 @@
+#define IDI_CUMMY 101
+IDI_CUMMY ICON "assets\\cummY-app.ico"

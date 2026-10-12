@@ -1,0 +1,11 @@
+.vscode/
+extras/
+*.exe
+*.obj
+*.res
+*.lib
+*.pdb
+*.ilk
+*.log
+*.ps1
+*.cmd
