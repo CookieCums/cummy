@@ -1,35 +1,124 @@
-<p align="center">
-  <img src="assets/cummY-github.png" alt="CummY logo" width="720">
-</p>
+<div align="center">
 
-# CummY
+<img src="assets/cummY-github.png" alt="CummY — Python dependency scanner for Windows" width="100%">
 
-<p align="center">
-  <img src="assets/cummY-app.png" alt="CummY app icon" width="180">
-</p>
+<br>
 
-CummY is a small Windows command-line tool that scans Python projects and generates dependency lists.
+### A tiny CLI to make Python dependency discovery easier.
 
-## Commands
+Scan Python projects, detect dependencies, and generate a `requirements.txt` — without the busywork.
 
-```text
+<br>
+
+[![Latest Release](https://img.shields.io/github/v/release/CookieCums/cummy?style=for-the-badge&color=6C9EFF&label=release)](https://github.com/CookieCums/cummy/releases/latest)
+[![Platform](https://img.shields.io/badge/platform-Windows-253B70?style=for-the-badge&logo=windows&logoColor=white)](https://github.com/CookieCums/cummy)
+[![Language](https://img.shields.io/badge/language-C%2B%2B-5C8DFF?style=for-the-badge&logo=cplusplus&logoColor=white)](https://github.com/CookieCums/cummy)
+
+<br>
+
+[**Download Installer**](https://github.com/CookieCums/cummy/releases/download/v1.0.0/cummy-setup-1.0.0.exe)
+&nbsp; · &nbsp;
+[**Portable CLI**](https://github.com/CookieCums/cummy/releases/download/v1.0.0/cummy.exe)
+&nbsp; · &nbsp;
+[**View Releases**](https://github.com/CookieCums/cummy/releases)
+
+</div>
+
+---
+
+## ✦ What is CummY?
+
+CummY is a lightweight Windows command-line utility that scans Python projects and builds dependency lists. It combines manifest files with static import scanning to help you prepare a dependency file for a project.
+
+<table>
+  <tr>
+    <td width="50%">
+      <strong>⌕ &nbsp; Scan projects</strong><br>
+      Find dependencies in Python source files and project manifests.
+    </td>
+    <td width="50%">
+      <strong>▤ &nbsp; Generate requirements</strong><br>
+      Create a `requirements.txt` automatically.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%">
+      <strong>ϟ &nbsp; Lightweight CLI</strong><br>
+      Run scans from a terminal with simple commands.
+    </td>
+    <td width="50%">
+      <strong>⬇ &nbsp; Two ways to install</strong><br>
+      Choose the guided Windows installer or the portable executable.
+    </td>
+  </tr>
+</table>
+
+## ⚡ Quick start
+
+### 1. Install
+
+Download the [guided installer](https://github.com/CookieCums/cummy/releases/download/v1.0.0/cummy-setup-1.0.0.exe) or the [portable CLI](https://github.com/CookieCums/cummy/releases/download/v1.0.0/cummy.exe) from the release.
+
+### 2. Open a terminal
+
+Navigate to your Python project directory, or pass the directory with `--path`.
+
+### 3. Run CummY
+
+```powershell
 cummy help
-cummy scan [--path PROJECT_DIR]
-cummy gen dep [OUTPUT_FILE] [--path PROJECT_DIR]
+cummy scan --path "C:\path\to\project"
+cummy gen dep --path "C:\path\to\project"
 ```
 
-With no `--path`, CummY scans the current directory. The default generated file is `requirements.txt` in the project directory.
+With no `--path`, CummY scans the current directory. The default output is `requirements.txt` in the project directory.
 
-## Dependency detection
+## ⌘ Commands
 
-CummY reads root-level `requirements*.txt` files and dependencies from `pyproject.toml`. It also scans Python files for static `import` statements, skips known standard-library modules, and maps common import names to package names. Version constraints are retained when declared in a manifest; names inferred from imports are unpinned.
+| Command | What it does |
+| --- | --- |
+| `cummy help` | Show available commands and usage. |
+| `cummy scan [--path PROJECT_DIR]` | Scan a project for dependencies. |
+| `cummy gen dep [OUTPUT_FILE] [--path PROJECT_DIR]` | Generate a dependency list. |
 
-## Windows installer
+## 🔎 How dependency detection works
 
-Download either the [guided installer](https://github.com/CookieCums/cummy/releases/download/v1.0.0/cummy-setup-1.0.0.exe) or the [portable CLI](https://github.com/CookieCums/cummy/releases/download/v1.0.0/cummy.exe) from the first release.
+CummY checks:
 
-The installer works per-user and offers an optional checkbox to add its installation directory to the user `PATH`. It uses the CummY app icon and creates a Start Menu shortcut.
+- Root-level `requirements*.txt` files.
+- Dependencies declared in `pyproject.toml`.
+- Static `import` statements in Python files.
+- Known standard-library modules, which are excluded from package results.
+- Common import-name-to-package-name mappings.
 
-## Publishing
+Version constraints are retained when declared in a manifest. Dependencies inferred only from imports are listed without pinned versions.
 
-Run `publish.cmd` to preview the files and approximate upload size. Run `publish.cmd -Publish -DryRun` to confirm the publish switch is passed without making changes. When ready, run `publish.cmd -Publish` to create the initial commit and `v1.0.0` tag, push them to GitHub, and publish a release with both Windows executables.
+## 🪟 Windows installation
+
+The per-user installer uses the CummY app icon, creates a Start Menu shortcut, and optionally adds the installation directory to your user `PATH`. The portable executable can be run without the guided installer.
+
+<div align="center">
+
+[**Get CummY v1.0.0 →**](https://github.com/CookieCums/cummy/releases/tag/v1.0.0)
+
+</div>
+
+## 📦 Publishing a release
+
+The repository's publishing script can preview the files and estimate upload size before publishing:
+
+```powershell
+publish.cmd
+publish.cmd -Publish -DryRun
+publish.cmd -Publish
+```
+
+The final command creates the release commit and `v1.0.0` tag, pushes them to GitHub, and publishes a release with both Windows executables.
+
+---
+
+<div align="center">
+
+Made for Windows · Built with C++
+
+</div>
