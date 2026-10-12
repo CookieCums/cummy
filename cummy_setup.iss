@@ -35,7 +35,7 @@ Filename: "{sys}\cmd.exe"; Parameters: "/k """"{app}\cummy.exe"" help"""; Descri
 
 [Code]
 const
-  CummyUninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{04A15615-E2BD-4F06-B96C-91467826498B}_is1';
+  CummyUninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{04A15615-E2BD-4F06-B96C-91467826498B}}_is1';
 
 var
   MaintenancePage: TInputOptionWizardPage;
