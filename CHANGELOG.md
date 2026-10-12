@@ -1,4 +1,9 @@
 # Changelog
+## [1.0.2] - 2026-10-13
+
+### Fixed
+
+- Fixed the bug with the installer not showing explicit repair/reinstall, change-location, and uninstall choices. Introduced in [1.0.1]
 
 ## [1.0.1] - 2026-10-13
 
