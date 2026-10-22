@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="assets/cummY-github-transparent.png" alt="CummY — Python dependency scanner for Windows" width="250" style="border-radius: 16px;">
+<img src="assets/cummY-github-transparent.png" alt="CummY — Python dependency scanner for Windows" width="300" style="border-radius: 0 0 24px 24px;">
 
 <br>
 
