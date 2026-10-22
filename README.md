@@ -16,9 +16,9 @@ Scan Python projects, detect dependencies, and generate a `requirements.txt` —
 
 <br>
 
-[**Download Installer**](https://github.com/CookieCums/cummy/releases/download/v1.0.1/cummy-setup-1.0.1.exe)
+[**Download Installer**](https://github.com/CookieCums/cummy/releases/download/v1.0.3/cummy-setup-1.0.3.exe)
 &nbsp; · &nbsp;
-[**Portable CLI**](https://github.com/CookieCums/cummy/releases/download/v1.0.1/cummy.exe)
+[**Portable CLI**](https://github.com/CookieCums/cummy/releases/download/v1.0.3/cummy.exe)
 &nbsp; · &nbsp;
 [**View Releases**](https://github.com/CookieCums/cummy/releases)
 
@@ -57,7 +57,7 @@ CummY is a lightweight Windows command-line utility that scans Python projects a
 
 ### 1. Install
 
-Download the [guided installer](https://github.com/CookieCums/cummy/releases/download/v1.0.1/cummy-setup-1.0.1.exe) or the [portable CLI](https://github.com/CookieCums/cummy/releases/download/v1.0.1/cummy.exe) from the release.
+Download the [guided installer](https://github.com/CookieCums/cummy/releases/download/v1.0.3/cummy-setup-1.0.3.exe) or the [portable CLI](https://github.com/CookieCums/cummy/releases/download/v1.0.3/cummy.exe) from the release.
 
 ### 2. Open a terminal
 
@@ -107,7 +107,7 @@ If CummY is already installed, rerunning the installer lets you:
 
 <div align="center">
 
-[**Get CummY v1.0.1 →**](https://github.com/CookieCums/cummy/releases/tag/v1.0.1)
+[**Get CummY v1.0.3 →**](https://github.com/CookieCums/cummy/releases/tag/v1.0.3)
 &nbsp; · &nbsp;
 [**GitHub repository**](https://github.com/CookieCums/cummy)
 
@@ -115,15 +115,15 @@ If CummY is already installed, rerunning the installer lets you:
 
 ## 📦 Publishing a release
 
-The publishing script defaults to the `v1.0.1` hotfix and reads that version's release notes from [CHANGELOG.md](CHANGELOG.md). Build `output\cummy.exe` and `output\cummy-setup-1.0.1.exe` first, then preview and publish. The publisher packages both executables and a version-specific changelog into `output\1.0.1 (latest)\`.
+The publishing script defaults to `v1.0.3` and reads its release notes from [CHANGELOG.md](CHANGELOG.md). Build `output\cummy.exe` and `output\cummy-setup-1.0.3.exe` first, then preview and publish:
 
 ```powershell
-publish.cmd
-publish.cmd -Publish -DryRun
-publish.cmd -Publish
+.\publish.ps1
+.\publish.ps1 -Publish -DryRun
+.\publish.ps1 -Publish
 ```
 
-Use `-Version 1.0.2` for a later version after adding its matching section to `CHANGELOG.md` and building the correspondingly named installer. After the GitHub release succeeds, the former `(latest)` folder is renamed to its plain version and the new version folder becomes `(latest)`. Build outputs under `output\` are ignored by Git.
+Use `-Version <version>` to publish a later version after adding its matching section to `CHANGELOG.md` and building the correspondingly named installer. After the GitHub release succeeds, the former `(latest)` folder is renamed to its plain version and the new version folder becomes `(latest)`. Build outputs under `output\` are ignored by Git.
 
 ---
 

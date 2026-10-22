@@ -1,18 +1,36 @@
 [CmdletBinding()]
 param(
     [switch]$Publish,
-    [switch]$DryRun
+    [switch]$DryRun,
+    [string]$Version = '1.0.3'
 )
 
 $ErrorActionPreference = 'Stop'
 $Repository = 'CookieCums/cummy'
 $RemoteUrl = 'https://github.com/CookieCums/cummy.git'
-$ReleaseTag = 'v1.0.0'
-$ReleaseTitle = 'CummY 1.0.0'
+if ($Version -notmatch '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$') {
+    throw "Version '$Version' is invalid. Use semantic version format, for example 1.0.1."
+}
+$ReleaseTag = "v$Version"
+$ReleaseTitle = "CummY $Version"
 $Root = Split-Path -Parent $MyInvocation.MyCommand.Path
+$OutputDirectory = Join-Path $Root 'output'
+$ChangelogPath = Join-Path $Root 'CHANGELOG.md'
+
+if (-not (Test-Path -LiteralPath $ChangelogPath -PathType Leaf)) {
+    throw "Changelog not found: $ChangelogPath"
+}
+$Changelog = Get-Content -LiteralPath $ChangelogPath -Raw -Encoding UTF8
+$VersionPattern = "(?ms)^## \[$([regex]::Escape($Version))\][^\r\n]*\r?\n(.*?)(?=^## |\z)"
+$VersionMatch = [regex]::Match($Changelog, $VersionPattern)
+if (-not $VersionMatch.Success -or [string]::IsNullOrWhiteSpace($VersionMatch.Groups[1].Value)) {
+    throw "CHANGELOG.md must contain a non-empty section headed '## [$Version]'."
+}
+$ReleaseNotes = $VersionMatch.Groups[1].Value.Trim()
 
 $SourceFiles = @(
     'README.md',
+    'CHANGELOG.md',
     '.gitignore',
     'publish.ps1',
     'cummy.cpp',
@@ -25,13 +43,44 @@ $SourceFiles = @(
 )
 $ReleaseAssets = @(
     'cummy.exe',
-    'cummy-setup-1.0.0.exe'
+    "cummy-setup-$Version.exe"
 )
-$RequiredFiles = $SourceFiles + $ReleaseAssets
+$ReleaseAssetPaths = @($ReleaseAssets | ForEach-Object { Join-Path $OutputDirectory $_ })
+$RequiredFiles = $SourceFiles + @(
+    'output\cummy.exe',
+    "output\cummy-setup-$Version.exe"
+)
 $MissingFiles = @($RequiredFiles | Where-Object { -not (Test-Path -LiteralPath (Join-Path $Root $_) -PathType Leaf) })
 
 if ($MissingFiles.Count -gt 0) {
     throw "Required publish files are missing: $($MissingFiles -join ', ')"
+}
+
+$LatestDirectories = @()
+if (Test-Path -LiteralPath $OutputDirectory -PathType Container) {
+    $LatestDirectories = @(Get-ChildItem -LiteralPath $OutputDirectory -Directory |
+        Where-Object { $_.Name -match '^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)? \(latest\)$' })
+}
+if ($LatestDirectories.Count -gt 1) {
+    throw "Expected at most one '(latest)' release folder in $OutputDirectory."
+}
+$CurrentLatestDirectory = if ($LatestDirectories.Count -eq 1) { $LatestDirectories[0] } else { $null }
+$TargetDirectory = Join-Path $OutputDirectory "$Version (latest)"
+$VersionDirectory = Join-Path $OutputDirectory $Version
+if ((Test-Path -LiteralPath $VersionDirectory) -and
+    (-not $CurrentLatestDirectory -or $CurrentLatestDirectory.FullName -ne $TargetDirectory)) {
+    throw "Release folder already exists: $VersionDirectory"
+}
+if ($CurrentLatestDirectory -and $CurrentLatestDirectory.FullName -ne $TargetDirectory) {
+    $CurrentVersionName = $CurrentLatestDirectory.Name -replace ' \(latest\)$', ''
+    $FormerVersionDirectory = Join-Path $OutputDirectory $CurrentVersionName
+    if (Test-Path -LiteralPath $FormerVersionDirectory) {
+        throw "Cannot archive latest folder because its destination already exists: $FormerVersionDirectory"
+    }
+}
+$StagingDirectory = Join-Path $OutputDirectory ".staging-$Version"
+if (Test-Path -LiteralPath $StagingDirectory) {
+    throw "Release staging folder already exists: $StagingDirectory. Inspect or move it before retrying."
 }
 
 $TotalBytes = [long]0
@@ -42,24 +91,27 @@ foreach ($File in $RequiredFiles) {
 Write-Output "Repository: https://github.com/$Repository"
 Write-Output "Visibility: public"
 Write-Output "Release: $ReleaseTag"
+Write-Output 'Release notes:'
+Write-Output $ReleaseNotes
 Write-Output 'Files to commit:'
 foreach ($File in $SourceFiles) {
     Write-Output "  $File"
 }
 Write-Output 'Release assets:'
-foreach ($File in $ReleaseAssets) {
-    $Info = Get-Item -LiteralPath (Join-Path $Root $File)
-    Write-Output ("  {0} ({1:N2} MB)" -f $File, ($Info.Length / 1MB))
+foreach ($Asset in $ReleaseAssets) {
+    $Info = Get-Item -LiteralPath (Join-Path $OutputDirectory $Asset)
+    Write-Output ("  {0} ({1:N2} MB)" -f $Asset, ($Info.Length / 1MB))
 }
+Write-Output "Versioned output folder: output\$Version (latest)"
 Write-Output ("Approximate total upload: {0:N2} MB" -f ($TotalBytes / 1MB))
 
 if (-not $Publish -or $DryRun) {
     if ($Publish -and $DryRun) {
         Write-Output 'Dry run: -Publish was received, but no changes or network operations were performed.'
-        Write-Output 'Run .\publish.cmd -Publish when you are ready to publish.'
+        Write-Output "Run .\publish.ps1 -Publish -Version $Version when you are ready to publish."
     } else {
         Write-Output 'Preview only. Nothing was initialized, committed, tagged, pushed, or uploaded.'
-        Write-Output 'Run .\publish.cmd -Publish to publish v1.0.0.'
+        Write-Output "Run .\publish.ps1 -Publish -Version $Version to publish $ReleaseTag."
     }
     return
 }
@@ -139,7 +191,7 @@ try {
     $HasHead = $LASTEXITCODE -eq 0
     if (-not $HasHead -or $StagedDiff -eq 1) {
         if ($StagedDiff -ne 1) { throw 'There are no staged files to commit.' }
-        & git commit -m 'Prepare CummY release v1.0.0' -m 'Pushed-by: Cumming...'
+        & git commit -m "Prepare CummY release $ReleaseTag" -m 'Pushed-by: Cumming...'
         if ($LASTEXITCODE -ne 0) { throw 'git commit failed.' }
     } elseif ($StagedDiff -ne 0) {
         throw 'Could not inspect staged changes.'
@@ -170,20 +222,54 @@ try {
     $ReleaseViewExitCode = $LASTEXITCODE
     $ErrorActionPreference = $PreviousErrorActionPreference
     $ReleaseExists = $ReleaseViewExitCode -eq 0
+    New-Item -ItemType Directory -Path $StagingDirectory | Out-Null
+    foreach ($Asset in $ReleaseAssets) {
+        Copy-Item -LiteralPath (Join-Path $OutputDirectory $Asset) -Destination $StagingDirectory
+    }
+    Set-Content -LiteralPath (Join-Path $StagingDirectory 'CHANGELOG.md') `
+        -Value "## [$Version]`r`n`r`n$ReleaseNotes" -Encoding UTF8
+    $ReleaseAssetPaths = @($ReleaseAssets | ForEach-Object { Join-Path $StagingDirectory $_ })
+
     if ($ReleaseExists) {
-        $UploadArguments = @('release', 'upload', $ReleaseTag) + $ReleaseAssets + @('--repo', $Repository, '--clobber')
+        $UploadArguments = @('release', 'upload', $ReleaseTag) + $ReleaseAssetPaths + @('--repo', $Repository, '--clobber')
         & gh @UploadArguments
+        if ($LASTEXITCODE -ne 0) { throw 'GitHub release asset upload failed.' }
+        & gh release edit $ReleaseTag --repo $Repository --title $ReleaseTitle --notes $ReleaseNotes
     } else {
-        $CreateArguments = @('release', 'create', $ReleaseTag) + $ReleaseAssets + @(
+        $CreateArguments = @('release', 'create', $ReleaseTag) + $ReleaseAssetPaths + @(
             '--repo', $Repository,
             '--title', $ReleaseTitle,
-            '--notes', 'First public release of CummY. Includes the Windows installer and portable CLI binary.'
+            '--notes', $ReleaseNotes
         )
         & gh @CreateArguments
     }
     if ($LASTEXITCODE -ne 0) { throw 'GitHub release publication failed.' }
 
+    if ($CurrentLatestDirectory -and $CurrentLatestDirectory.FullName -eq $TargetDirectory) {
+        foreach ($Asset in $ReleaseAssets + @('CHANGELOG.md')) {
+            Move-Item -LiteralPath (Join-Path $StagingDirectory $Asset) `
+                -Destination $TargetDirectory -Force
+        }
+        Remove-Item -LiteralPath $StagingDirectory
+    } else {
+        $FormerVersionDirectory = $null
+        if ($CurrentLatestDirectory) {
+            $CurrentVersionName = $CurrentLatestDirectory.Name -replace ' \(latest\)$', ''
+            $FormerVersionDirectory = Join-Path $OutputDirectory $CurrentVersionName
+            Move-Item -LiteralPath $CurrentLatestDirectory.FullName -Destination $FormerVersionDirectory
+        }
+        try {
+            Move-Item -LiteralPath $StagingDirectory -Destination $TargetDirectory
+        } catch {
+            if ($FormerVersionDirectory -and (Test-Path -LiteralPath $FormerVersionDirectory)) {
+                Move-Item -LiteralPath $FormerVersionDirectory -Destination $CurrentLatestDirectory.FullName
+            }
+            throw
+        }
+    }
+
     Write-Output "Published $ReleaseTag to https://github.com/$Repository/releases/tag/$ReleaseTag"
+    Write-Output "Release files saved to output\$Version (latest)."
 } finally {
     Pop-Location
 }
