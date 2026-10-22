@@ -228,22 +228,25 @@ try {
     }
     Set-Content -LiteralPath (Join-Path $StagingDirectory 'CHANGELOG.md') `
         -Value "## [$Version]`r`n`r`n$ReleaseNotes" -Encoding UTF8
+    $ReleaseNotesPath = Join-Path $StagingDirectory 'release-notes.md'
+    Set-Content -LiteralPath $ReleaseNotesPath -Value $ReleaseNotes -Encoding UTF8
     $ReleaseAssetPaths = @($ReleaseAssets | ForEach-Object { Join-Path $StagingDirectory $_ })
 
     if ($ReleaseExists) {
         $UploadArguments = @('release', 'upload', $ReleaseTag) + $ReleaseAssetPaths + @('--repo', $Repository, '--clobber')
         & gh @UploadArguments
         if ($LASTEXITCODE -ne 0) { throw 'GitHub release asset upload failed.' }
-        & gh release edit $ReleaseTag --repo $Repository --title $ReleaseTitle --notes $ReleaseNotes
+        & gh release edit $ReleaseTag --repo $Repository --title $ReleaseTitle --notes-file $ReleaseNotesPath
     } else {
         $CreateArguments = @('release', 'create', $ReleaseTag) + $ReleaseAssetPaths + @(
             '--repo', $Repository,
             '--title', $ReleaseTitle,
-            '--notes', $ReleaseNotes
+            '--notes-file', $ReleaseNotesPath
         )
         & gh @CreateArguments
     }
     if ($LASTEXITCODE -ne 0) { throw 'GitHub release publication failed.' }
+    Remove-Item -LiteralPath $ReleaseNotesPath
 
     if ($CurrentLatestDirectory -and $CurrentLatestDirectory.FullName -eq $TargetDirectory) {
         foreach ($Asset in $ReleaseAssets + @('CHANGELOG.md')) {
