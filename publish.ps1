@@ -199,11 +199,19 @@ try {
 
     $Head = (& git rev-parse HEAD).Trim()
     if ($LASTEXITCODE -ne 0) { throw 'Could not read the commit to release.' }
+
+    $PreviousErrorActionPreference = $ErrorActionPreference
+    $ErrorActionPreference = 'Continue'
+    & gh release view $ReleaseTag --repo $Repository *> $null
+    $ReleaseViewExitCode = $LASTEXITCODE
+    $ErrorActionPreference = $PreviousErrorActionPreference
+    $ReleaseExists = $ReleaseViewExitCode -eq 0
+
     & git show-ref --verify --quiet "refs/tags/$ReleaseTag"
     $TagExists = $LASTEXITCODE -eq 0
     if ($TagExists) {
         $TaggedCommit = (& git rev-list -n 1 $ReleaseTag).Trim()
-        if ($TaggedCommit -ne $Head) {
+        if ($TaggedCommit -ne $Head -and -not $ReleaseExists) {
             throw "Tag $ReleaseTag already points to a different commit."
         }
     } else {
@@ -216,12 +224,6 @@ try {
     & git push origin $ReleaseTag
     if ($LASTEXITCODE -ne 0) { throw "Could not push tag $ReleaseTag." }
 
-    $PreviousErrorActionPreference = $ErrorActionPreference
-    $ErrorActionPreference = 'Continue'
-    & gh release view $ReleaseTag --repo $Repository *> $null
-    $ReleaseViewExitCode = $LASTEXITCODE
-    $ErrorActionPreference = $PreviousErrorActionPreference
-    $ReleaseExists = $ReleaseViewExitCode -eq 0
     New-Item -ItemType Directory -Path $StagingDirectory | Out-Null
     foreach ($Asset in $ReleaseAssets) {
         Copy-Item -LiteralPath (Join-Path $OutputDirectory $Asset) -Destination $StagingDirectory
