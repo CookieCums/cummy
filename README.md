@@ -16,9 +16,9 @@ Scan Python projects, detect dependencies, and generate a `requirements.txt` —
 
 <br>
 
-[**Download Installer**](https://github.com/CookieCums/cummy/releases/download/v1.0.3/cummy-setup-1.0.3.exe)
+[**Download Installer**](https://github.com/CookieCums/cummy/releases/download/v1.0.4/cummy-setup-1.0.4.exe)
 &nbsp; · &nbsp;
-[**Portable CLI**](https://github.com/CookieCums/cummy/releases/download/v1.0.3/cummy.exe)
+[**Portable CLI**](https://github.com/CookieCums/cummy/releases/download/v1.0.4/cummy.exe)
 &nbsp; · &nbsp;
 [**View Releases**](https://github.com/CookieCums/cummy/releases)
 
@@ -57,7 +57,7 @@ CummY is a lightweight Windows command-line utility that scans Python projects a
 
 ### 1. Install
 
-Download the [guided installer](https://github.com/CookieCums/cummy/releases/download/v1.0.3/cummy-setup-1.0.3.exe) or the [portable CLI](https://github.com/CookieCums/cummy/releases/download/v1.0.3/cummy.exe) from the release.
+Download the [guided installer](https://github.com/CookieCums/cummy/releases/download/v1.0.4/cummy-setup-1.0.4.exe) or the [portable CLI](https://github.com/CookieCums/cummy/releases/download/v1.0.4/cummy.exe) from the release.
 
 ### 2. Open a terminal
 
@@ -69,9 +69,11 @@ Navigate to your Python project directory, or pass the directory with `--path`.
 cummy help
 cummy scan --path "C:\path\to\project"
 cummy gen dep --path "C:\path\to\project"
+cummy cum
 ```
 
 With no `--path`, CummY scans the current directory. The default output is `requirements.txt` in the project directory.
+In Command Prompt or PowerShell, `cummy cum` automatically opens a new shell with the nearest virtual environment activated; type `exit` to return.
 
 ## ⌘ Commands
 
@@ -80,6 +82,7 @@ With no `--path`, CummY scans the current directory. The default output is `requ
 | `cummy help` | Show available commands and usage. |
 | `cummy scan [--path PROJECT_DIR]` | Scan a project for dependencies. |
 | `cummy gen dep [OUTPUT_FILE] [--path PROJECT_DIR]` | Generate a dependency list. |
+| `cummy cum [--path PROJECT_DIR]` | Open a shell with the nearest virtual environment activated. |
 
 ## 🔎 How dependency detection works
 
@@ -107,7 +110,7 @@ If CummY is already installed, rerunning the installer lets you:
 
 <div align="center">
 
-[**Get CummY v1.0.3 →**](https://github.com/CookieCums/cummy/releases/tag/v1.0.3)
+[**Get CummY v1.0.4 →**](https://github.com/CookieCums/cummy/releases/tag/v1.0.4)
 &nbsp; · &nbsp;
 [**GitHub repository**](https://github.com/CookieCums/cummy)
 
@@ -115,7 +118,7 @@ If CummY is already installed, rerunning the installer lets you:
 
 ## 📦 Publishing a release
 
-The publishing script defaults to `v1.0.3` and reads its release notes from [CHANGELOG.md](CHANGELOG.md). Build `output\cummy.exe` and `output\cummy-setup-1.0.3.exe` first, then preview and publish:
+The publishing script defaults to `v1.0.4` and reads its release notes from [CHANGELOG.md](CHANGELOG.md). Build `output\cummy.exe` and `output\cummy-setup-1.0.4.exe` first, then preview and publish:
 
 ```powershell
 .\publish.ps1

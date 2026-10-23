@@ -1,7 +1,7 @@
 [Setup]
 AppId={{04A15615-E2BD-4F06-B96C-91467826498B}}
 AppName=Cummy
-AppVersion=1.0.3
+AppVersion=1.0.4
 DefaultDirName={localappdata}\Programs\Cummy
 DefaultGroupName=Cummy
 DisableProgramGroupPage=yes
@@ -9,7 +9,7 @@ PrivilegesRequired=lowest
 ArchitecturesAllowed=x64compatible
 ArchitecturesInstallIn64BitMode=x64compatible
 OutputDir=output
-OutputBaseFilename=cummy-setup-1.0.3
+OutputBaseFilename=cummy-setup-1.0.4
 Compression=lzma2
 SolidCompression=yes
 WizardStyle=modern

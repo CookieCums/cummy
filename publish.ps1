@@ -2,7 +2,7 @@
 param(
     [switch]$Publish,
     [switch]$DryRun,
-    [string]$Version = '1.0.3'
+    [string]$Version = '1.0.4'
 )
 
 $ErrorActionPreference = 'Stop'

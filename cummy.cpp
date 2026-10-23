@@ -11,6 +11,8 @@
 #include <vector>
 
 #ifdef _WIN32
+#define NOMINMAX
+#include <windows.h>
 #include <io.h>
 #else
 #include <unistd.h>
@@ -589,9 +591,10 @@ void printHelp() {
               << "  cummy uncum\n"
               << "  cummy setup\n\n"
               << "Shell integration:\n"
-              << "  Run `cummy setup` to print snippets for ~/.bashrc or ~/.zshrc.\n"
-              << "  Once set up, `cum` activates the nearest virtual environment\n"
-              << "  and `uncum` deactivates it.\n\n"
+              << "  On Windows, `cummy cum` opens a shell with the nearest virtual\n"
+              << "  environment activated; type `exit` to return.\n"
+              << "  On Bash, Zsh, or Fish, `cummy setup` prints shell integration\n"
+              << "  so `cummy cum` and `cummy uncum` work in the current shell.\n\n"
               << "The default output for `gen` is requirements.txt in the project directory.\n";
 }
 
@@ -693,13 +696,116 @@ CommandLineOptions parseArguments(int argc, char* argv[]) {
 
 void handleSetup() {
     std::cout << "# Add this to ~/.bashrc or ~/.zshrc, then reload your shell:\n"
-              << "cum()   { eval \"$(command cummy cum)\"; }\n"
-              << "uncum() { eval \"$(command cummy uncum)\"; }\n"
+              << "cummy() {\n"
+              << "    if [ \"$#\" -gt 0 ] && { [ \"$1\" = \"cum\" ] || [ \"$1\" = \"uncum\" ]; }; then\n"
+              << "        local subcommand=\"$1\"\n"
+              << "        shift\n"
+              << "        eval \"$(command cummy \"$subcommand\" \"$@\")\"\n"
+              << "    else\n"
+              << "        command cummy \"$@\"\n"
+              << "    fi\n"
+              << "}\n"
               << "\n"
               << "# fish shell equivalent:\n"
-              << "# function cum;   eval (command cummy cum);   end\n"
-              << "# function uncum; eval (command cummy uncum); end\n";
+              << "# function cummy\n"
+              << "#     if test \"$argv[1]\" = cum; or test \"$argv[1]\" = uncum\n"
+              << "#         set -l subcommand $argv[1]\n"
+              << "#         set -e argv[1]\n"
+              << "#         eval (command cummy $subcommand $argv)\n"
+              << "#     else\n"
+              << "#         command cummy $argv\n"
+              << "#     end\n"
+              << "# end\n";
 }
+
+#ifdef _WIN32
+std::wstring quoteWindowsArgument(const std::wstring& argument) {
+    std::wstring quoted = L"\"";
+    size_t backslashes = 0;
+    for (const wchar_t character : argument) {
+        if (character == L'\\') {
+            ++backslashes;
+        } else if (character == L'"') {
+            quoted.append(backslashes * 2 + 1, L'\\');
+            quoted += character;
+            backslashes = 0;
+        } else {
+            quoted.append(backslashes, L'\\');
+            quoted += character;
+            backslashes = 0;
+        }
+    }
+    quoted.append(backslashes * 2, L'\\');
+    quoted += L'"';
+    return quoted;
+}
+
+int runActivatedWindowsShell(const fs::path& venv) {
+    std::wstring commandLine;
+    const char* powershell = std::getenv("PSModulePath");
+    if (powershell && *powershell) {
+        const fs::path activationScript = venv / "Scripts" / "Activate.ps1";
+        if (!fs::is_regular_file(activationScript)) {
+            throw std::runtime_error("PowerShell activation script not found: " +
+                                     activationScript.string());
+        }
+        std::wstring scriptPath = activationScript.wstring();
+        std::wstring escapedPath;
+        for (const wchar_t character : scriptPath) {
+            escapedPath += character;
+            if (character == L'\'') escapedPath += character;
+        }
+        const std::wstring activationCommand = L". '" + escapedPath + L"'";
+        commandLine = quoteWindowsArgument(L"powershell.exe") +
+                      L" -NoLogo -NoExit -ExecutionPolicy Bypass -Command " +
+                      quoteWindowsArgument(activationCommand);
+    } else {
+        const fs::path activationScript = venv / "Scripts" / "activate.bat";
+        if (!fs::is_regular_file(activationScript)) {
+            throw std::runtime_error("Command Prompt activation script not found: " +
+                                     activationScript.string());
+        }
+        const char* commandProcessor = std::getenv("COMSPEC");
+        const std::wstring executable = commandProcessor && *commandProcessor
+            ? fs::path(commandProcessor).wstring()
+            : L"cmd.exe";
+        commandLine = quoteWindowsArgument(executable) + L" /d /k \"\"" +
+                      activationScript.wstring() + L"\"\"";
+    }
+
+    STARTUPINFOW startup{};
+    startup.cb = sizeof(startup);
+    startup.dwFlags = STARTF_USESTDHANDLES;
+    startup.hStdInput = GetStdHandle(STD_INPUT_HANDLE);
+    startup.hStdOutput = GetStdHandle(STD_OUTPUT_HANDLE);
+    startup.hStdError = GetStdHandle(STD_ERROR_HANDLE);
+    PROCESS_INFORMATION process{};
+    if (!CreateProcessW(nullptr, commandLine.data(), nullptr, nullptr, TRUE, 0,
+                        nullptr, nullptr, &startup, &process)) {
+        throw std::runtime_error("Could not start an activated shell (Windows error " +
+                                 std::to_string(GetLastError()) + ").");
+    }
+
+    CloseHandle(process.hThread);
+    const DWORD waitResult = WaitForSingleObject(process.hProcess, INFINITE);
+    if (waitResult != WAIT_OBJECT_0) {
+        const DWORD error = GetLastError();
+        CloseHandle(process.hProcess);
+        throw std::runtime_error("Could not wait for the activated shell (Windows error " +
+                                 std::to_string(error) + ").");
+    }
+
+    DWORD shellExitCode = 0;
+    if (!GetExitCodeProcess(process.hProcess, &shellExitCode)) {
+        const DWORD error = GetLastError();
+        CloseHandle(process.hProcess);
+        throw std::runtime_error("Could not read the activated shell's exit code (Windows error " +
+                                 std::to_string(error) + ").");
+    }
+    CloseHandle(process.hProcess);
+    return static_cast<int>(shellExitCode);
+}
+#endif
 
 void handleActivate(const CommandLineOptions& options, int& exitCode) {
     std::error_code error;
@@ -738,6 +844,10 @@ void handleActivate(const CommandLineOptions& options, int& exitCode) {
             proceed = true;
         } else if (mode == AutoNever) {
             proceed = false;
+#ifdef _WIN32
+        } else if (!piped) {
+            proceed = true;
+#endif
         } else if (stdinIsTerminal()) {
             const int choice = promptActivate(venv);
             if (choice == 1) {
@@ -760,11 +870,18 @@ void handleActivate(const CommandLineOptions& options, int& exitCode) {
     if (piped) {
         printActivation(venv, std::cout);
     } else {
+#ifdef _WIN32
+        std::cout << "Opening a shell with this virtual environment activated:\n"
+                  << "  " << venv.string() << "\n"
+                  << "Type exit to return to your previous shell.\n";
+        exitCode = runActivatedWindowsShell(venv);
+#else
         std::cout << "Virtual environment ready: " << venv.string() << "\n\n"
                   << "To activate it in your shell, run:\n"
                   << "  eval \"$(command cummy cum --shell --yes)\"\n\n"
-                  << "For persistent shell integration (recommended), run:\n"
+                  << "For persistent shell integration, run:\n"
                   << "  cummy setup\n";
+#endif
     }
 }
 
@@ -781,11 +898,15 @@ void handleDeactivate(const CommandLineOptions& options, int& exitCode) {
     if (piped) {
         printDeactivation(std::cout);
     } else if (active) {
+#ifdef _WIN32
+        std::cout << "Type exit to leave the shell with the virtual environment activated.\n";
+#else
         std::cout << "Active virtual environment: " << activeEnv << "\n\n"
                   << "To deactivate in your shell, run:\n"
                   << "  eval \"$(command cummy uncum --shell)\"\n\n"
                   << "For persistent shell integration (recommended), run:\n"
                   << "  cummy setup\n";
+#endif
     }
 }
 

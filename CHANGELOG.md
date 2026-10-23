@@ -1,5 +1,11 @@
 # Changelog
 
+## [1.0.4] - 2026-10-23
+
+### Fixed
+
+- Running `cummy cum` interactively on Windows now automatically opens a Command Prompt or PowerShell session with the virtual environment activated, without requiring shell setup.
+- Bash and Zsh shell integration now keeps activation under `cummy cum` and `cummy uncum` instead of adding separate short commands.
 
 ## [1.0.3] - 2026-10-23
 
